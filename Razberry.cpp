@@ -5,7 +5,6 @@
 #include <sstream> // std::stringstream
 #include <vector>
 
-#include <wbmqtt/http_helper.h>
 #include <wbmqtt/utils.h>
 
 #pragma warning(disable : 4996)
@@ -15,6 +14,71 @@
 #ifdef _DEBUG
 #define DEBUG_ZWAVE_INT
 #endif
+
+static size_t _CurlDataWriteCallback(void* buf, size_t size, size_t nmemb, void* userp)
+{
+    std::streamsize len = size * nmemb;
+    if (userp) {
+        std::ostream& os = *static_cast<std::ostream*>(userp);
+        if (os.write(static_cast<char*>(buf), len)) return len;
+    }
+    return len;
+}
+
+CRazberry::HttpReader::HttpReader(CRazberry* owner) : Owner(owner)
+{
+    char* fileName = tempnam("/tmp", "wb-mqtt-zway");
+    m_cookieFile = std::string(fileName);
+    free(fileName);
+    m_curl = curl_easy_init();
+}
+
+bool CRazberry::HttpReader::GetHTTPUrl(const std::string& url, std::string& result)
+{
+    if (!m_curl) return false;
+
+    std::string data = "{\"login\":\"" + Owner->m_username + "\",\"password\":\"" +
+                       Owner->m_password + "\",\"rememberme\":false}";
+    struct curl_slist* headers = NULL;
+    headers = curl_slist_append(headers, "Content-Type: application/json");
+    std::stringstream ss;
+    long timeout = 10;
+    std::string authorization_url = Owner->GetAuthURL();
+
+    if (!(CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &_CurlDataWriteCallback) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_FILE, NULL) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_POST, 1L) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_POSTFIELDS, data.c_str()) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_COOKIEJAR, m_cookieFile.c_str()) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, headers) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_TIMEOUT, timeout) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 1L) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_URL, authorization_url.c_str()) &&
+          CURLE_OK == curl_easy_perform(m_curl))) {
+        return false;
+    }
+    curl_easy_reset(m_curl);
+
+    if (!(CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, &_CurlDataWriteCallback) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_COOKIEFILE, m_cookieFile.c_str()) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_NOPROGRESS, 1L) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_FILE, &ss) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_TIMEOUT, timeout) &&
+          CURLE_OK == curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str()) &&
+          CURLE_OK == curl_easy_perform(m_curl))) {
+        return false;
+    }
+    result = ss.str();
+    return true;
+}
+CRazberry::HttpReader::~HttpReader()
+{
+    if (m_curl) curl_easy_cleanup(m_curl);
+    if ((remove(m_cookieFile.c_str()) != 0) && (errno != ENOENT))
+        cerr << "Razberry: Failed to remove temp file " << m_cookieFile << std::endl;
+}
 
 using namespace std;
 static std::string readInputTestFile(const char* path)
@@ -44,7 +108,7 @@ static time_t mytime(time_t* _Time)
 
 CRazberry::CRazberry(TMQTTZWay* owner, const int ID, const std::string& ipaddress, const int port,
                      const std::string& username, const std::string& password)
-    : Owner(owner)
+    : Owner(owner), m_httpReader(this)
 {
     m_ipaddress = ipaddress;
     m_port = port;
@@ -71,22 +135,21 @@ string CRazberry::MqttEscape(const string& str)
 const std::string CRazberry::GetControllerURL()
 {
     std::stringstream sUrl;
-    if (m_username == "")
-        sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZWaveAPI/Data/" << m_updateTime;
-    else
-        sUrl << "http://" << m_username << ":" << m_password << "@" << m_ipaddress << ":" << m_port
-             << "/ZWaveAPI/Data/" << m_updateTime;
+    sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZWaveAPI/Data/" << m_updateTime;
     return sUrl.str();
 }
 
 const std::string CRazberry::GetRunURL(const std::string& cmd)
 {
     std::stringstream sUrl;
-    if (m_username == "")
-        sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZWaveAPI/Run/" << cmd;
-    else
-        sUrl << "http://" << m_username << ":" << m_password << "@" << m_ipaddress << ":" << m_port
-             << "/ZWaveAPI/Run/" << cmd;
+    sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZWaveAPI/Run/" << cmd;
+    return sUrl.str();
+}
+
+const std::string CRazberry::GetAuthURL()
+{
+    std::stringstream sUrl;
+    sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZAutomation/api/v1/login";
     return sUrl.str();
 }
 
@@ -98,7 +161,7 @@ bool CRazberry::GetInitialDevices()
     std::string szURL = GetControllerURL();
 
     bool bret;
-    bret = GetHTTPUrl(szURL, sResult);
+    bret = m_httpReader.GetHTTPUrl(szURL, sResult);
     if (!bret) {
         cerr << "Razberry: Error getting data!";
         return 0;
@@ -141,7 +204,7 @@ bool CRazberry::GetUpdates()
 #ifndef DEBUG_ZWAVE_INT
     std::string szURL = GetControllerURL();
     bool bret;
-    bret = GetHTTPUrl(szURL, sResult);
+    bret = m_httpReader.GetHTTPUrl(szURL, sResult);
     if (!bret) {
         cerr << "Razberry: Error getting update data!";
         return 0;
@@ -984,7 +1047,7 @@ void CRazberry::RunCMD(const std::string& cmd)
     std::string szURL = GetRunURL(cmd);
     bool bret;
     std::string sResult;
-    bret = GetHTTPUrl(szURL, sResult);
+    bret = m_httpReader.GetHTTPUrl(szURL, sResult);
     if (!bret) {
         cerr << "Razberry: Error sending command to controller!";
     }

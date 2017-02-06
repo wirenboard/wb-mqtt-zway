@@ -5,6 +5,7 @@
 #include <iostream>
 #include <map>
 #include <time.h>
+#include <wbmqtt/http_helper.h>
 #include <wbmqtt/mqtt_wrapper.h>
 
 namespace Json {
@@ -37,6 +38,7 @@ public:
 
 private:
     const std::string GetControllerURL();
+    const std::string GetAuthURL();
     const std::string GetRunURL(const std::string& cmd);
     void parseDevices(const Json::Value& devroot);
 
@@ -53,12 +55,26 @@ private:
     void RunCMD(const std::string& cmd);
     void UpdateDevice(const std::string& path, const Json::Value& obj);
     string MqttEscape(const string& str);
+
+    class HttpReader {
+    public:
+        HttpReader(CRazberry* owner);
+        bool GetHTTPUrl(const std::string& url, std::string& result);
+        ~HttpReader();
+
+    private:
+        CRazberry* Owner;
+        std::string m_cookieFile;
+        CURL* m_curl;
+    };
+
     TMQTTZWay* Owner;
     std::string m_ipaddress;
     int m_port;
     std::string m_username;
     std::string m_password;
     int m_controllerID;
+    HttpReader m_httpReader;
 };
 
 class TMQTTZWay : public TMQTTWrapper {
