@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "title": "Bridge to WB-MQTT for Z-Way software",
+
+  "properties": {
+    "mqtt_host": {
+      "type": "string",
+      "title": "MQTT address",
+      "default": "127.0.0.1",
+      "minLength": 1,
+      "propertyOrder":1
+     },
+    "mqtt_port": {
+      "type": "number",
+      "title": "MQTT port",
+      "default": 1883,
+      "propertyOrder":2,
+      "minimum":1,
+      "maximum":65535
+     },
+    "zway_host": {
+      "type": "string",
+      "title": "z-way-server host address",
+      "default": "127.0.0.1",
+      "minLength": 1,
+      "propertyOrder":3
+     },
+    "zway_port": {
+      "type": "number",
+      "title": "z-way-server port",
+      "default": 8083,
+      "propertyOrder":4,
+      "minimum":1,
+      "maximum":65535
+     },
+    "zway_username": {
+      "type": "string",
+      "title": "z-way-server username",
+      "default": "admin",
+      "minLength": 1,
+      "propertyOrder":5
+     },
+    "zway_password": {
+      "type": "string",
+      "title": "z-way-server password",
+      "default": "admin",
+      "minLength": 1,
+      "propertyOrder":6
+     }
+  },
+  "configFile": {
+    "path": "/etc/wb-mqtt-zway.conf",
+    "service": "wb-mqtt-zway"
+  }
+}
+
