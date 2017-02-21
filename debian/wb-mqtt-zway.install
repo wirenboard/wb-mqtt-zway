@@ -1,2 +1,3 @@
 usr/bin/*
 etc/*
+usr/share/wb-mqtt-confed/schemas/*

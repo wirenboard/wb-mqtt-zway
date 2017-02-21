@@ -40,6 +40,8 @@ install: all
 	install -d $(DESTDIR)
 	install -d $(DESTDIR)/etc
 	install -d $(DESTDIR)/usr/bin
+	install -d $(DESTDIR)/usr/share/wb-mqtt-confed/schemas
 
 	install -m 0755  $(ZWAY_BIN) $(DESTDIR)/usr/bin/$(ZWAY_BIN)
+	install -m 0644  wb-mqtt-zway.schema.json $(DESTDIR)/usr/share/wb-mqtt-confed/schemas/wb-mqtt-zway.schema.json
 	install -m 0644  config.json $(DESTDIR)/etc/wb-mqtt-zway.conf
