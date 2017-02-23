@@ -4,5 +4,6 @@
 	"zway_host": "127.0.0.1",
 	"zway_port": 8083,
 	"zway_username": "admin",
-	"zway_password": "admin"
+	"zway_password": "admin",
+	"zway_secure_login_auth": true
 }
