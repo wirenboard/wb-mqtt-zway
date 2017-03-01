@@ -4,7 +4,7 @@ using namespace std;
 
 TMQTTZWay::TMQTTZWay(const TMQTTZWay::TConfig& mqtt_config, TZWayConfig zway_config)
     : TMQTTWrapper(mqtt_config)
-    , razberry(this, zway_config.Id, zway_config.Host, zway_config.Port, zway_config.Username, zway_config.Password)
+    , razberry(this, zway_config.Id, zway_config.Host, zway_config.Port, zway_config.Username, zway_config.Password, zway_config.SecureLoginAuth)
     , DeviceName(zway_config.DeviceName)
 {
     Connect();

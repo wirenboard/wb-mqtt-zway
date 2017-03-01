@@ -47,6 +47,13 @@
       "default": "admin",
       "minLength": 1,
       "propertyOrder":6
+     },
+    "zway_secure_login_auth": {
+      "type": "boolean",
+      "title": "Use Secure Login z-way-server authentication",
+      "default": true,
+      "propertyOrder": 7,
+      "_format": "checkbox"
      }
   },
   "configFile": {

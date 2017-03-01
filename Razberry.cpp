@@ -5,6 +5,7 @@
 #include <sstream> // std::stringstream
 #include <vector>
 
+#include <wbmqtt/http_helper.h>
 #include <wbmqtt/utils.h>
 
 #pragma warning(disable : 4996)
@@ -35,6 +36,8 @@ CRazberry::HttpReader::HttpReader(CRazberry* owner) : Owner(owner)
 
 bool CRazberry::HttpReader::GetHTTPUrl(const std::string& url, std::string& result)
 {
+    if (!Owner->m_secureLoginAuth) return ::GetHTTPUrl(url, result);
+
     if (!m_curl) return false;
 
     std::string data = "{\"login\":\"" + Owner->m_username + "\",\"password\":\"" +
@@ -107,7 +110,7 @@ static time_t mytime(time_t* _Time)
 }
 
 CRazberry::CRazberry(TMQTTZWay* owner, const int ID, const std::string& ipaddress, const int port,
-                     const std::string& username, const std::string& password)
+                     const std::string& username, const std::string& password, bool secureLoginAuth)
     : Owner(owner), m_httpReader(this)
 {
     m_ipaddress = ipaddress;
@@ -115,6 +118,7 @@ CRazberry::CRazberry(TMQTTZWay* owner, const int ID, const std::string& ipaddres
     m_username = username;
     m_password = password;
     m_controllerID = 0;
+    m_secureLoginAuth = secureLoginAuth;
 }
 
 CRazberry::~CRazberry(void)
@@ -135,14 +139,22 @@ string CRazberry::MqttEscape(const string& str)
 const std::string CRazberry::GetControllerURL()
 {
     std::stringstream sUrl;
-    sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZWaveAPI/Data/" << m_updateTime;
+    if (m_secureLoginAuth || m_username == "")
+        sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZWaveAPI/Data/" << m_updateTime;
+    else
+        sUrl << "http://" << m_username << ":" << m_password << "@" << m_ipaddress << ":" << m_port
+             << "/ZWaveAPI/Data/" << m_updateTime;
     return sUrl.str();
 }
 
 const std::string CRazberry::GetRunURL(const std::string& cmd)
 {
     std::stringstream sUrl;
-    sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZWaveAPI/Run/" << cmd;
+    if (m_secureLoginAuth || m_username == "")
+        sUrl << "http://" << m_ipaddress << ":" << m_port << "/ZWaveAPI/Run/" << cmd;
+    else
+        sUrl << "http://" << m_username << ":" << m_password << "@" << m_ipaddress << ":" << m_port
+             << "/ZWaveAPI/Run/" << cmd;
     return sUrl.str();
 }
 

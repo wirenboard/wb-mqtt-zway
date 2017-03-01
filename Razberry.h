@@ -17,6 +17,7 @@ using namespace std;
 struct TZWayConfig {
     int Id = 0;
     int Port = 8083;
+    bool SecureLoginAuth = true;
     string Host = "localhost";
     string Username = "";
     string Password = "";
@@ -29,7 +30,7 @@ class TMQTTZWay;
 class CRazberry : public ZWaveBase {
 public:
     CRazberry(TMQTTZWay* owner, const int ID, const std::string& ipaddress, const int port,
-              const std::string& username, const std::string& password);
+              const std::string& username, const std::string& password, bool secureLoginAuth);
     ~CRazberry(void);
     void SendCommand(const string& dev_id, const string& control_id, const string& payload);
 
@@ -75,6 +76,7 @@ private:
     std::string m_password;
     int m_controllerID;
     HttpReader m_httpReader;
+    bool m_secureLoginAuth;
 };
 
 class TMQTTZWay : public TMQTTWrapper {

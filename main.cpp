@@ -74,6 +74,9 @@ int main (int argc, char **argv)
         if (root.isMember("zway_host")) {
             zway_config.Host = root["zway_host"].asString();
         }
+        if (root.isMember("zway_secure_login_auth")) {
+            zway_config.SecureLoginAuth = root["zway_secure_login_auth"].asBool();
+        }
         if (root.isMember("zway_username")) {
             zway_config.Username = root["zway_username"].asString();
             zway_config.Password = root["zway_password"].asString();
