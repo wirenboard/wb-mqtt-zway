@@ -14,7 +14,7 @@ endif
 
 #CFLAGS=-Wall -ggdb -std=c++0x -O0 -I.
 CFLAGS=-Wall -std=c++0x -Os -I.
-LDFLAGS= -lmosquittopp -lmosquitto -ljsoncpp -lwbmqtt
+LDFLAGS= -lmosquittopp -lmosquitto -ljsoncpp -lwbmqtt -lcurl
 
 ZWAY_BIN=wb-mqtt-zway
 
